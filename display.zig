@@ -39,8 +39,38 @@ pub const Display = struct {
         defer c.SDL_DestroyRenderer(this.renderer);
     }
 
-    pub fn toggleMemory(this: *Display, col: u6, row: u5) void {
-        this.screen[row][col] = 1 - this.screen[row][col];
+    pub fn togglePixel(this: *Display, col: u6, row: u5) void {
+        this.screen[row][col] = this.screen[row][col] ^ 1;
+    }
+
+    pub fn clearScreen(this: *Display) void {
+        var row: u8 = 0;
+        var col: u8 = 0;
+        while (row < 32) : (row += 1) {
+            while (col < 64) : (col += 1) {
+                this.screen[row][col] = 0;
+            }
+            col = 0;
+        }
+    }
+
+    pub fn drawSprite(this: *Display, col: u8, row: u8, height: u4, sprite: []u8) bool {
+        var _r: usize = 0;
+        var _c: usize = 0;
+
+        var unset: bool = false;
+
+        while (_r < height) : (_r += 1) {
+            while (_c < 8) : (_c += 1) {
+                const pastPixel = this.screen[row + _r][col + _c];
+                this.screen[row + _r][col + _c] ^= @intCast(((sprite[_r] >> (7 - @as(u3, @intCast(_c)))) & 1));
+                if (pastPixel == 1 and this.screen[row + _r][col + _c] == 0) {
+                    unset = true;
+                }
+            }
+            _c = 0;
+        }
+        return unset;
     }
 
     pub fn showScreen(this: *Display) void {
@@ -55,12 +85,9 @@ pub const Display = struct {
                 if (this.screen[row][col] == 1) {
                     _ = c.SDL_RenderDrawPoint(this.renderer, col, row);
                 }
-                //std.debug.print("{d}", .{this.screen[ @as(usize, @intCast(row)) ][ @as(usize, @intCast(col)) ]});
             }
             col = 0;
-            //std.debug.print("\n", .{});
         }
-        //std.debug.print("\n\n\n", .{});
         c.SDL_RenderPresent(this.renderer);
     }
 };

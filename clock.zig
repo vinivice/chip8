@@ -22,10 +22,7 @@ pub const Clock = struct {
         const clockTime = 1_000_000_000 / this.clockFrequency;
         this.tick60Hz = false;
         if (this.ElapsedTimeFor60Hz > 16_666_666) {
-            //std.debug.print("{d} ", .{this.ElapsedTimeFor60Hz});
-            //this.ElapsedTimeFor60Hz -|= 16_666_666;
             this.ElapsedTimeFor60Hz = 0;
-            //std.debug.print("{d} {d}\n", .{ this.ElapsedTimeFor60Hz, this.DEBUG_countClock });
             this.delayTimer -|= 1;
             this.soundTimer -|= 1;
             this.DEBUG_count += 1;
