@@ -62,10 +62,12 @@ pub const Display = struct {
 
         while (_r < height) : (_r += 1) {
             while (_c < 8) : (_c += 1) {
-                const pastPixel = this.screen[row + _r][col + _c];
-                this.screen[row + _r][col + _c] ^= @intCast(((sprite[_r] >> (7 - @as(u3, @intCast(_c)))) & 1));
-                if (pastPixel == 1 and this.screen[row + _r][col + _c] == 0) {
-                    unset = true;
+                if (row + _r < 32 and col + _c < 64) {
+                    const pastPixel = this.screen[row + _r][col + _c];
+                    this.screen[row + _r][col + _c] ^= @intCast(((sprite[_r] >> (7 - @as(u3, @intCast(_c)))) & 1));
+                    if (pastPixel == 1 and this.screen[row + _r][col + _c] == 0) {
+                        unset = true;
+                    }
                 }
             }
             _c = 0;
