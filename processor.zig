@@ -169,8 +169,9 @@ pub const Processor = struct {
                         }
                     },
                     0x6 => {
-                        this.V[0xf] = this.V[p1] & 1;
+                        const temp = this.V[p1] & 1;
                         this.V[p1] >>= 1;
+                        this.V[0xf] = temp;
                         if (debug) {
                             std.debug.print("V{X} >>= V{Y}\n", .{ p1, this.V[p1] });
                         }
@@ -184,8 +185,9 @@ pub const Processor = struct {
                         }
                     },
                     0xE => {
-                        this.V[0xf] = (this.V[p1] & 0b10000000) >> 7;
+                        const temp = (this.V[p1] & 0b10000000) >> 7;
                         this.V[p1] <<= 1;
+                        this.V[0xf] = temp;
                         if (debug) {
                             std.debug.print("V{X} <<= V{Y}\n", .{ p1, this.V[p1] });
                         }
