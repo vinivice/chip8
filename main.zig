@@ -22,7 +22,7 @@ pub fn main() !void {
     try display.Init();
     defer display.Destroy();
     var processor: Processor = Processor{};
-    processor.Init(&memory, &display);
+    processor.Init(&memory, &display, &clock);
 
     //********************DEBUG************************
     var i: u32 = 0;
