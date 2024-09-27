@@ -55,17 +55,30 @@ pub const Display = struct {
     }
 
     pub fn drawSprite(this: *Display, col: u8, row: u8, height: u4, sprite: []u8) bool {
+        const trimmedCol: u8 = col % 0x40;
+        const trimmedRow: u8 = row % 0x20;
         var _r: usize = 0;
         var _c: usize = 0;
+
+        //DEBUG ***********
+        //std.debug.print("{d} {d} {d}\n", .{ row, col, height });
+        //var i: u8 = 0;
+        //while (i < height) : (i += 1) {
+        //    std.debug.print("{b}\n", .{sprite[i]});
+        //}
+        //std.debug.print("\n", .{});
+        //DEBUG ***********
 
         var unset: bool = false;
 
         while (_r < height) : (_r += 1) {
             while (_c < 8) : (_c += 1) {
-                if (row + _r < 32 and col + _c < 64) {
-                    const pastPixel = this.screen[row + _r][col + _c];
-                    this.screen[row + _r][col + _c] ^= @intCast(((sprite[_r] >> (7 - @as(u3, @intCast(_c)))) & 1));
-                    if (pastPixel == 1 and this.screen[row + _r][col + _c] == 0) {
+                const curRow = (trimmedRow + _r);
+                const curCol = (trimmedCol + _c);
+                if (curRow < 32 and curCol < 64) {
+                    const pastPixel = this.screen[curRow][curCol];
+                    this.screen[curRow][curCol] ^= @intCast(((sprite[_r] >> (7 - @as(u3, @intCast(_c)))) & 1));
+                    if (pastPixel == 1 and this.screen[curRow][curCol] == 0) {
                         unset = true;
                     }
                 }

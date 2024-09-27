@@ -148,18 +148,21 @@ pub const Processor = struct {
                     },
                     0x1 => {
                         this.V[p1] |= this.V[p2];
+                        this.V[0xf] = 0;
                         if (debug) {
                             std.debug.print("V{X} |= V{Y}\n", .{ p1, this.V[p1] });
                         }
                     },
                     0x2 => {
                         this.V[p1] &= this.V[p2];
+                        this.V[0xf] = 0;
                         if (debug) {
                             std.debug.print("V{X} &= V{Y}\n", .{ p1, this.V[p1] });
                         }
                     },
                     0x3 => {
                         this.V[p1] ^= this.V[p2];
+                        this.V[0xf] = 0;
                         if (debug) {
                             std.debug.print("V{X} ^= V{Y}\n", .{ p1, this.V[p1] });
                         }
@@ -238,6 +241,8 @@ pub const Processor = struct {
                     if (debug) {
                         std.debug.print("UNSET ", .{});
                     }
+                } else {
+                    this.V[0xf] = 0;
                 }
                 if (debug) {
                     std.debug.print("DRAW\n", .{});
@@ -382,12 +387,14 @@ pub const Processor = struct {
                         while (i <= p1) : (i += 1) {
                             this.memory.data[this.I + i] = this.V[i];
                         }
+                        this.I += p1 + 1;
                     },
                     0x6 => {
                         var i: u4 = 0;
                         while (i <= p1) : (i += 1) {
                             this.V[i] = this.memory.data[this.I + i];
                         }
+                        this.I += p1 + 1;
                     },
                     else => {
                         std.debug.print("IN F {x} {x} {x} {x}\n", .{ p0, p1, p2, p3 });
