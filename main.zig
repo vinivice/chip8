@@ -19,7 +19,7 @@ pub fn main() !void {
     var clock: Clock = Clock{};
     try clock.Init(DEBUG_CLOCK_SPEED);
     var display: Display = Display{};
-    try display.Init();
+    try display.Init(&clock);
     defer display.Destroy();
     var processor: Processor = Processor{};
     processor.Init(&memory, &display, &clock);

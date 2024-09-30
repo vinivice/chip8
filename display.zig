@@ -1,4 +1,6 @@
 const std = @import("std");
+const Clock = @import("clock.zig").Clock;
+
 const c = @cImport({
     @cInclude("stdlib.h");
     @cInclude("SDL2/SDL.h");
@@ -13,8 +15,10 @@ pub const Display = struct {
     screen: [32][64]u1 = undefined,
     window: ?*c.SDL_Window = undefined,
     renderer: ?*c.SDL_Renderer = undefined,
+    clock: *Clock = undefined,
 
-    pub fn Init(this: *Display) !void {
+    pub fn Init(this: *Display, clock: *Clock) !void {
+        this.clock = clock;
         var sdlReturn: c_int = c.SDL_Init(c.SDL_INIT_VIDEO);
 
         if (sdlReturn < 0) {
@@ -59,6 +63,10 @@ pub const Display = struct {
         const trimmedRow: u8 = row % 0x20;
         var _r: usize = 0;
         var _c: usize = 0;
+
+        while (!this.clock.tick60Hz) {
+            this.clock.tick();
+        }
 
         //DEBUG ***********
         //std.debug.print("{d} {d} {d}\n", .{ row, col, height });

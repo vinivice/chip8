@@ -184,6 +184,7 @@ pub const Processor = struct {
                         }
                     },
                     0x6 => {
+                        this.V[p1] = this.V[p2];
                         const temp = this.V[p1] & 1;
                         this.V[p1] >>= 1;
                         this.V[0xf] = temp;
@@ -200,6 +201,7 @@ pub const Processor = struct {
                         }
                     },
                     0xE => {
+                        this.V[p1] = this.V[p2];
                         const temp = (this.V[p1] & 0b10000000) >> 7;
                         this.V[p1] <<= 1;
                         this.V[0xf] = temp;
