@@ -296,8 +296,9 @@ pub const Processor = struct {
                                 var ev: c.SDL_Event = undefined;
                                 var waitingKeyPress: bool = true;
                                 while (waitingKeyPress) {
-                                    _ = c.SDL_WaitEvent(&ev);
-                                    if (ev.type == c.SDL_KEYDOWN) {
+                                    this.clock.tick();
+                                    _ = c.SDL_PollEvent(&ev);
+                                    if (ev.type == c.SDL_KEYUP) {
                                         switch (ev.key.keysym.sym) {
                                             c.SDLK_x => {
                                                 this.V[p1] = 0x0;
@@ -385,18 +386,20 @@ pub const Processor = struct {
                         this.memory.data[this.I + 2] = ones;
                     },
                     0x5 => {
-                        var i: u4 = 0;
+                        var i: usize = 0;
                         while (i <= p1) : (i += 1) {
                             this.memory.data[this.I + i] = this.V[i];
                         }
-                        this.I += p1 + 1;
+                        this.I += p1;
+                        this.I += 1;
                     },
                     0x6 => {
-                        var i: u4 = 0;
+                        var i: usize = 0;
                         while (i <= p1) : (i += 1) {
                             this.V[i] = this.memory.data[this.I + i];
                         }
-                        this.I += p1 + 1;
+                        this.I += p1;
+                        this.I += 1;
                     },
                     else => {
                         std.debug.print("IN F {x} {x} {x} {x}\n", .{ p0, p1, p2, p3 });
