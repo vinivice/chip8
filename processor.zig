@@ -376,6 +376,9 @@ pub const Processor = struct {
                             },
                         }
                     },
+                    0x2 => {
+                        this.I = this.V[p1] * 0x05;
+                    },
                     0x3 => {
                         const hundreds = this.V[p1] / 100;
                         const tens = (this.V[p1] % 100) / 10;
