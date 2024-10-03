@@ -9,7 +9,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    //exe.linkSystemLibrary("c++");
     exe.linkSystemLibrary("SDL2");
     exe.linkLibC();
 

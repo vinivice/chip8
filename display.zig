@@ -68,15 +68,6 @@ pub const Display = struct {
             this.clock.tick();
         }
 
-        //DEBUG ***********
-        //std.debug.print("{d} {d} {d}\n", .{ row, col, height });
-        //var i: u8 = 0;
-        //while (i < height) : (i += 1) {
-        //    std.debug.print("{b}\n", .{sprite[i]});
-        //}
-        //std.debug.print("\n", .{});
-        //DEBUG ***********
-
         var unset: bool = false;
 
         while (_r < height) : (_r += 1) {

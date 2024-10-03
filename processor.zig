@@ -24,6 +24,9 @@ pub const Processor = struct {
     SP: u4 = 0,
     stack: [15]u12 = undefined,
 
+    prng: std.Random.Xoshiro256 = undefined,
+    rand: std.Random = undefined,
+
     fn push(this: *Processor) void {
         if (this.SP == 0xf) {
             unreachable;
@@ -47,14 +50,13 @@ pub const Processor = struct {
         this.display = d;
         this.clock = clock;
 
-        var i: usize = 0;
-        while (i < this.V.len) : (i += 1) {
-            this.V[i] = 0;
-        }
-        while (i < this.stack.len) : (i += 1) {
-            this.stack[i] = 0;
-        }
+        this.V = [_]u8{0} ** 16;
+        this.stack = [_]u12{0} ** 15;
         this.I = 0;
+
+        this.prng = std.rand.DefaultPrng.init(12);
+        this.rand = this.prng.random();
+        std.debug.print("RANDOM {d}\n", .{this.rand.int(u8)});
     }
 
     pub fn processInstruction(this: *Processor) void {
@@ -64,20 +66,12 @@ pub const Processor = struct {
         const p3: u4 = @intCast(this.memory.data[this.PC + 1] & 0x0F);
 
         this.PC += 2;
-        const debug: bool = false;
-
-        if (debug) {
-            std.debug.print("Inst: {x:0>1} {x:0>1} {x:0>1} {x:0>1}\t", .{ p0, p1, p2, p3 });
-        }
 
         switch (p0) {
             0x0 => {
                 if (p1 == 0) {
                     if (p2 == 0xE and p3 == 0) {
                         this.display.clearScreen();
-                        if (debug) {
-                            std.debug.print("CLRSCR\n", .{});
-                        }
                     } else if (p2 == 0xE and p3 == 0xE) {
                         this.pop();
                     } else {
@@ -88,126 +82,75 @@ pub const Processor = struct {
             },
             0x1 => {
                 this.PC = (@as(u12, @intCast(p1)) << 8) + (@as(u12, @intCast(p2)) << 4) + p3;
-                if (debug) {
-                    std.debug.print("pc == 0x{x}\n", .{this.pc});
-                }
             },
             0x2 => {
                 this.push();
                 this.PC = (@as(u12, @intCast(p1)) << 8) + (@as(u12, @intCast(p2)) << 4) + p3;
-                if (debug) {
-                    std.debug.print("pc == 0x{x}\n", .{this.pc});
-                }
             },
             0x3 => {
                 if (this.V[p1] == (@as(u8, @intCast(p2)) << 4) + p3) {
                     this.PC += 2;
-                }
-
-                if (debug) {
-                    std.debug.print("if(Vx == NN)\n", .{this.pc});
                 }
             },
             0x4 => {
                 if (this.V[p1] != (@as(u8, @intCast(p2)) << 4) + p3) {
                     this.PC += 2;
                 }
-
-                if (debug) {
-                    std.debug.print("if(Vx != NN)\n", .{this.pc});
-                }
             },
             0x5 => {
                 if (this.V[p1] == this.V[p2]) {
                     this.PC += 2;
                 }
-
-                if (debug) {
-                    std.debug.print("if(Vx == VY)\n", .{this.pc});
-                }
             },
             0x6 => {
                 this.V[p1] = (@as(u8, @intCast(p2)) << 4) + p3;
-                if (debug) {
-                    std.debug.print("V{X} == 0x{x}\n", .{ p1, this.V[p1] });
-                }
             },
             0x7 => {
                 this.V[p1] +%= (@as(u8, @intCast(p2)) << 4) + p3;
-                if (debug) {
-                    std.debug.print("V{X} == 0x{x}\n", .{ p1, this.V[p1] });
-                }
             },
             0x8 => {
                 switch (p3) {
                     0x0 => {
                         this.V[p1] = this.V[p2];
-                        if (debug) {
-                            std.debug.print("V{X} == V{Y}\n", .{ p1, this.V[p1] });
-                        }
                     },
                     0x1 => {
                         this.V[p1] |= this.V[p2];
                         this.V[0xf] = 0;
-                        if (debug) {
-                            std.debug.print("V{X} |= V{Y}\n", .{ p1, this.V[p1] });
-                        }
                     },
                     0x2 => {
                         this.V[p1] &= this.V[p2];
                         this.V[0xf] = 0;
-                        if (debug) {
-                            std.debug.print("V{X} &= V{Y}\n", .{ p1, this.V[p1] });
-                        }
                     },
                     0x3 => {
                         this.V[p1] ^= this.V[p2];
                         this.V[0xf] = 0;
-                        if (debug) {
-                            std.debug.print("V{X} ^= V{Y}\n", .{ p1, this.V[p1] });
-                        }
                     },
                     0x4 => {
                         const sumAndOverflow = @addWithOverflow(this.V[p1], this.V[p2]);
                         this.V[p1] = sumAndOverflow[0];
                         this.V[0xf] = sumAndOverflow[1];
-                        if (debug) {
-                            std.debug.print("V{X} += V{Y} with carry\n", .{ p1, this.V[p1] });
-                        }
                     },
                     0x5 => {
                         const diffAndOverflow = @subWithOverflow(this.V[p1], this.V[p2]);
                         this.V[p1] = diffAndOverflow[0];
                         this.V[0xf] = diffAndOverflow[1] ^ 1;
-                        if (debug) {
-                            std.debug.print("V{X} -= V{Y} with carry\n", .{ p1, this.V[p1] });
-                        }
                     },
                     0x6 => {
                         this.V[p1] = this.V[p2];
                         const temp = this.V[p1] & 1;
                         this.V[p1] >>= 1;
                         this.V[0xf] = temp;
-                        if (debug) {
-                            std.debug.print("V{X} >>= V{Y}\n", .{ p1, this.V[p1] });
-                        }
                     },
                     0x7 => {
                         const diffAndOverflow = @subWithOverflow(this.V[p2], this.V[p1]);
                         this.V[p1] = diffAndOverflow[0];
                         this.V[0xf] = diffAndOverflow[1] ^ 1;
-                        if (debug) {
-                            std.debug.print("V{X} = V{Y} - V{X}\n", .{ p1, this.V[p1] });
-                        }
                     },
                     0xE => {
                         this.V[p1] = this.V[p2];
                         const temp = (this.V[p1] & 0b10000000) >> 7;
                         this.V[p1] <<= 1;
                         this.V[0xf] = temp;
-                        if (debug) {
-                            std.debug.print("V{X} <<= V{Y}\n", .{ p1, this.V[p1] });
-                        }
                     },
                     else => {
                         std.debug.print("IN 8 {x} {x} {x} {x}\n", .{ p0, p1, p2, p3 });
@@ -219,40 +162,28 @@ pub const Processor = struct {
                 if (this.V[p1] != this.V[p2]) {
                     this.PC += 2;
                 }
-
-                if (debug) {
-                    std.debug.print("if(Vx != VY)\n", .{this.pc});
-                }
             },
             0xA => {
                 this.I = (@as(u12, @intCast(p1)) << 8) + (@as(u12, @intCast(p2)) << 4) + p3;
-                if (debug) {
-                    std.debug.print("I == 0x{x}\n", .{this.I});
-                }
             },
             0xB => {
                 const address = (@as(u12, @intCast(p1)) << 8) + (@as(u12, @intCast(p2)) << 4) + p3;
                 this.PC = this.V[0x0] + address;
-                if (debug) {
-                    std.debug.print("I == 0x{x}\n", .{this.I});
-                }
+            },
+            0xC => {
+                const mask = (@as(u8, @intCast(p2)) << 4) + p3;
+                const randTemp = this.rand.int(u8);
+                this.V[p1] = randTemp & mask;
             },
             0xD => {
                 if (this.display.drawSprite(this.V[p1], this.V[p2], p3, this.memory.data[this.I..])) {
                     this.V[0xf] = 1;
-                    if (debug) {
-                        std.debug.print("UNSET ", .{});
-                    }
                 } else {
                     this.V[0xf] = 0;
-                }
-                if (debug) {
-                    std.debug.print("DRAW\n", .{});
                 }
             },
             0xE => {
                 c.SDL_PumpEvents();
-                //TODO REFACTOR AND PUT INTO FUNCTIONS
                 const keyboardState: [*]const u8 = c.SDL_GetKeyboardState(null);
                 var keysPressed: [16]bool = undefined;
                 keysPressed[0x0] = keyboardState[c.SDL_SCANCODE_X] == 1;
@@ -272,7 +203,6 @@ pub const Processor = struct {
                 keysPressed[0xe] = keyboardState[c.SDL_SCANCODE_F] == 1;
                 keysPressed[0xf] = keyboardState[c.SDL_SCANCODE_V] == 1;
                 if (p2 == 0x9 and p3 == 0xE) {
-                    //std.debug.print("{any}\n", .{keysPressed});
                     if (keysPressed[this.V[p1]]) {
                         this.PC += 2;
                     }
@@ -367,6 +297,9 @@ pub const Processor = struct {
                             0x5 => {
                                 this.clock.delayTimer = this.V[p1];
                             },
+                            0x8 => {
+                                this.clock.soundTimer = this.V[p1];
+                            },
                             0xE => {
                                 this.I += this.V[p1];
                             },
@@ -410,10 +343,10 @@ pub const Processor = struct {
                     },
                 }
             },
-            else => {
-                std.debug.print("IN ELSE {x} {x} {x} {x}\n", .{ p0, p1, p2, p3 });
-                unreachable;
-            },
+            //else => {
+            //    std.debug.print("IN ELSE {x} {x} {x} {x}\n", .{ p0, p1, p2, p3 });
+            //    unreachable;
+            //},
         }
     }
 };

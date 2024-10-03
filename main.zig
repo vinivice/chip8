@@ -24,14 +24,9 @@ pub fn main() !void {
     var processor: Processor = Processor{};
     processor.Init(&memory, &display, &clock);
 
-    //********************DEBUG************************
-    //var i: u32 = 0;
-    //********************DEBUG************************
-
     var isRunning: bool = true;
     var ev: c.SDL_Event = undefined;
     clock.timer.reset();
-    //while (i < DEBUG_CLOCK_SPEED * 10 and isRunning) : (i += 1) {
     while (isRunning) {
         while (c.SDL_PollEvent(&ev) != 0) {
             if (ev.type == c.SDL_QUIT) {
